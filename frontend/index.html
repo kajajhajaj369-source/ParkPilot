@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>ParkPilot — Parking Lot Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ================= BOOM BARRIER HEADER ================= -->
+  <header class="gate">
+    <div class="gate__brand">
+      <span class="gate__mark">P</span>
+      <div>
+        <h1 class="gate__title">ParkPilot</h1>
+        <p class="gate__subtitle">Lot Management Console</p>
+      </div>
+    </div>
+    <div class="gate__barrier" id="barrier">
+      <div class="gate__pole" id="pole"></div>
+    </div>
+    <div class="gate__clock" id="liveClock">--:--:--</div>
+  </header>
+
+  <main class="lot">
+
+    <!-- ================= STAT COUNTERS ================= -->
+    <section class="counters" aria-label="Parking summary">
+      <div class="counter">
+        <span class="counter__label">Total Slots</span>
+        <span class="counter__value" id="totalSlots">--</span>
+      </div>
+      <div class="counter counter--available">
+        <span class="counter__label">Available</span>
+        <span class="counter__value" id="availableSlots">--</span>
+      </div>
+      <div class="counter counter--occupied">
+        <span class="counter__label">Occupied</span>
+        <span class="counter__value" id="occupiedSlots">--</span>
+      </div>
+    </section>
+
+    <section class="analytics" aria-label="Occupancy analytics"><span>Occupancy: <strong id="occupancyValue">--%</strong></span><span>Active sessions: <strong id="activeSessions">--</strong></span><span>Slot categories: 3 two-wheelers · 5 cars · 2 accessible</span></section>
+
+    <div class="lot__grid">
+
+      <!-- ================= LEFT: ENTRY / EXIT / SEARCH ================= -->
+      <section class="panel">
+        <div class="panel__lane"></div>
+        <h2 class="panel__title">Vehicle Entry</h2>
+        <form id="parkForm" class="form">
+          <label class="form__label" for="vehicleNumberIn">Vehicle Number</label>
+          <input class="form__input" id="vehicleNumberIn" type="text" placeholder="MH19PS1008" required pattern="([A-Za-z]{2}[0-9]{1,2}[A-Za-z]{1,3}[0-9]{1,4}|[0-9]{2}[Bb][Hh][0-9]{4}[A-Za-z]{1,2})" minlength="6" maxlength="11" title="Enter a valid Indian registration, e.g. MH19PS1008 or 22BH1234AA" autocapitalize="characters" />
+
+          <label class="form__label" for="vehicleTypeIn">Vehicle / parking category</label>
+          <select class="form__input" id="vehicleTypeIn">
+            <option value="Car">Car</option>
+            <option value="Bike">Bike</option>
+            <option value="Truck">Truck</option>
+            <option value="Accessible">Accessible</option>
+          </select>
+
+          <button class="btn btn--go" type="submit">Park Vehicle</button>
+        </form>
+        <p class="form__result" id="parkResult"></p>
+
+        <div class="panel__lane"></div>
+        <h2 class="panel__title">Vehicle Exit</h2>
+        <form id="exitForm" class="form">
+          <label class="form__label" for="vehicleNumberOut">Vehicle Number</label>
+          <input class="form__input" id="vehicleNumberOut" type="text" placeholder="MH19PS1008" required pattern="([A-Za-z]{2}[0-9]{1,2}[A-Za-z]{1,3}[0-9]{1,4}|[0-9]{2}[Bb][Hh][0-9]{4}[A-Za-z]{1,2})" minlength="6" maxlength="11" title="Enter a valid Indian registration, e.g. MH19PS1008 or 22BH1234AA" autocapitalize="characters" />
+          <button class="btn btn--stop" type="submit">Exit &amp; Calculate Fee</button>
+        </form>
+        <p class="form__result" id="exitResult" aria-live="polite"></p>
+        <div class="fee-card" id="feeCard" hidden>
+          <span class="fee-card__label">Parking Fee</span>
+          <span class="fee-card__value" id="feeValue">₹0</span>
+          <span class="fee-card__meta" id="feeMeta"></span>
+        </div>
+
+        <div class="panel__lane"></div>
+        <h2 class="panel__title">Search Vehicle</h2>
+        <form id="searchForm" class="form form--inline">
+          <input class="form__input" id="searchInput" type="text" placeholder="MH19PS1008" required pattern="([A-Za-z]{2}[0-9]{1,2}[A-Za-z]{1,3}[0-9]{1,4}|[0-9]{2}[Bb][Hh][0-9]{4}[A-Za-z]{1,2})" minlength="6" maxlength="11" title="Enter a valid Indian registration, e.g. MH19PS1008 or 22BH1234AA" autocapitalize="characters" />
+          <button class="btn btn--ghost" type="submit">Search</button>
+        </form>
+        <p class="form__result" id="searchResult"></p>
+      </section>
+
+      <!-- ================= RIGHT: PARKED VEHICLES ================= -->
+      <section class="panel panel--wide">
+        <div class="panel__header">
+          <h2 class="panel__title">Currently Parked</h2>
+          <button class="btn btn--ghost btn--sm" id="refreshBtn">Refresh</button>
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Bay</th>
+              <th>Vehicle No.</th>
+              <th>Type</th>
+              <th>Entry Time</th>
+            </tr>
+          </thead>
+          <tbody id="vehicleTableBody">
+            <tr><td colspan="4" class="table__empty">No vehicles parked yet.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="slotmap" id="slotMap" aria-label="Slot map"></div>
+      </section>
+
+      <!-- ================= HISTORY ================= -->
+      <section class="panel panel--wide panel--full">
+        <div class="panel__header">
+          <h2 class="panel__title">Parking History</h2>
+          <div class="panel__actions">
+            <a class="btn btn--go btn--sm" id="downloadHistoryBtn" href="/api/history/download" download="parking_history.csv">
+              ⬇ Download Excel (CSV)
+            </a>
+            <button class="btn btn--stop btn--sm" id="clearHistoryBtn" type="button">
+              🗑 Clear History
+            </button>
+          </div>
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Bay</th>
+              <th>Vehicle No.</th>
+              <th>Type</th>
+              <th>Entry Time</th>
+              <th>Exit Time</th>
+              <th>Fee</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr><td colspan="7" class="table__empty">No history yet.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    Frontend (HTML/CSS/JS) &rarr; Node bridge &rarr; C++ parking engine
+  </footer>
+
+<script src="script.js"></script>
+</body>
+</html>
+
