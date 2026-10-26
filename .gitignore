@@ -1,0 +1,29 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.*
+
+# Local parking records contain vehicle registrations and timestamps
+/data/*.txt
+
+# Generated binaries and test outputs
+/backend/*.exe
+/backend/parking
+/backend/parking-tests
+/backend/parking-tests.exe
+
+# Node and editor output
+/node_modules/
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.vs/
+
