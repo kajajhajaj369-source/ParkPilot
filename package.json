@@ -1,0 +1,12 @@
+{
+  "name": "parkpilot",
+  "version": "1.0.0",
+  "description": "Smart parking management system with a C++ parking engine",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build:backend": "g++ -std=c++11 -o backend/parking.exe backend/parking.cpp",
+    "test": "node backend/tests/run_tests.js"
+  }
+}
+
